@@ -8,9 +8,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve the HTML file
+// Serve the HTML file from the "public" folder
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Temporary database for login codes
 const loginCodes = {};
 
 // Setup Resend with your Environment Variable
@@ -22,12 +23,12 @@ app.post('/api/send', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email is required' });
 
     const code = crypto.randomInt(100000, 999999).toString();
-    loginCodes[email] = { code, expiresAt: Date.now() + 300000 };
+    loginCodes[email] = { code, expiresAt: Date.now() + 300000 }; // 5 mins
 
     try {
-        // Send email using Resend
+        // Send email using Resend's default free email address
         await resend.emails.send({
-            from: 'onboarding@resend.dev', // Resend's free testing email
+            from: 'onboarding@resend.dev', 
             to: email,
             subject: 'Your StudyAI Login Code',
             html: `<h2>Login Verification</h2><p>Your code is: <h1 style="color:blue;">${code}</h1></p>`
@@ -39,7 +40,7 @@ app.post('/api/send', async (req, res) => {
     }
 });
 
-// 2. Endpoint to verify the code (This stays exactly the same)
+// 2. Endpoint to verify the code
 app.post('/api/verify', (req, res) => {
     const { email, code } = req.body;
     const storedData = loginCodes[email];
