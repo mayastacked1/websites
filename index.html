@@ -1,0 +1,21 @@
+// Inside your <script> tag in index.html
+
+async function sendVerificationCode() {
+    // ... other code ...
+    const response = await fetch('/api/send', { // <-- Changed to /api/send
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+    });
+    // ... other code ...
+}
+
+async function verifyTheCode() {
+    // ... other code ...
+    const response = await fetch('/api/verify', { // <-- Changed to /api/verify
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code })
+    });
+    // ... other code ...
+}
