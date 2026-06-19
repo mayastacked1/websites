@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const crypto = require('crypto');
 const path = require('path');
 
@@ -8,20 +8,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve the HTML file from the "public" folder
+// Serve the HTML file
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Temporary database for login codes
 const loginCodes = {};
 
-// Configure Nodemailer (Uses Environment Variables on Render)
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.GMAIL_USER, 
-        pass: process.env.GMAIL_PASS   
-    }
-});
+// Setup Resend with your Environment Variable
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 1. Endpoint to send the code
 app.post('/api/send', async (req, res) => {
@@ -29,11 +22,12 @@ app.post('/api/send', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'Email is required' });
 
     const code = crypto.randomInt(100000, 999999).toString();
-    loginCodes[email] = { code, expiresAt: Date.now() + 300000 }; // 5 mins
+    loginCodes[email] = { code, expiresAt: Date.now() + 300000 };
 
     try {
-        await transporter.sendMail({
-            from: `"StudyAI" <${process.env.GMAIL_USER}>`,
+        // Send email using Resend
+        await resend.emails.send({
+            from: 'onboarding@resend.dev', // Resend's free testing email
             to: email,
             subject: 'Your StudyAI Login Code',
             html: `<h2>Login Verification</h2><p>Your code is: <h1 style="color:blue;">${code}</h1></p>`
@@ -45,7 +39,7 @@ app.post('/api/send', async (req, res) => {
     }
 });
 
-// 2. Endpoint to verify the code
+// 2. Endpoint to verify the code (This stays exactly the same)
 app.post('/api/verify', (req, res) => {
     const { email, code } = req.body;
     const storedData = loginCodes[email];
@@ -61,7 +55,6 @@ app.post('/api/verify', (req, res) => {
     }
 });
 
-// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
